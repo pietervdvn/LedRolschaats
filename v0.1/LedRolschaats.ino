@@ -4,7 +4,7 @@
 
 #define LED_PIN     D1
 #define NUM_LEDS    30
-#define BRIGHTNESS  100
+#define BRIGHTNESS  255
 #define LED_TYPE    WS2811
 #define COLOR_ORDER GRB
 
@@ -46,13 +46,14 @@ void setup() {
 
 void loop()
 {
-	double timeElapsed = 0.0;
+	int timeElapsed = 0;
+	int frameDuration = 10; // In milliseconds
 	while(true){
 		clear();
        
 		animate(timeElapsed);	
 		
-		safety(140);
+		safety(60);
 		
 		
 		FastLED.show();
@@ -62,18 +63,18 @@ void loop()
 }
 
 
-void animate(double time){
+int animate(uint frame, double millisPerFrame){
 	
 	// Move one pixel per second.
 	// AT time 0, we are at - 12
 	
 	time *= 1.3;
 	
-	double ledStart = time - ((int) (time / (NUM_LEDS + 16))) * (NUM_LEDS + 16);
+	double ledStart = time - ((int) (time / (NUM_LEDS + 8))) * (NUM_LEDS + 8);
 	
 	interpolateOutrunFromTo(ledStart - 15 , ledStart);
 	
-	
+	return 60; // The number of seconds that an animation takes
 	
 }
 
@@ -132,10 +133,10 @@ void safety(int brightness){
 	leds[3] = CRGB(brightness, 0,0);
 	leds[4] = CRGB(brightness, 0,0);
 
-	leds[25] = CRGB(brightness, 255,255);
-	leds[26] = CRGB(brightness, 255,255);
-	leds[27] = CRGB(brightness, 255,255);
-    leds[28] = CRGB(brightness, 255,255);
-    leds[29] = CRGB(brightness, 255,255);
+	leds[25] = CRGB(brightness, brightness,brightness);
+	leds[26] = CRGB(brightness, brightness,brightness);
+	leds[27] = CRGB(brightness, brightness,brightness);
+    leds[28] = CRGB(brightness, brightness,brightness);
+    leds[29] = CRGB(brightness, brightness,brightness);
 
 }
