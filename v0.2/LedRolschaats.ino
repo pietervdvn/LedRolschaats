@@ -61,11 +61,14 @@ void loop()
 }
 
 
-uint distance(uint x, uint y){
+double distance(double x, double y){
 	// Distance is modular,
 	// So if distance is > NUM_LEDS/2, it wraps around
-	int d = abs((int) x - (int) y);
-	int dWrapAround = NUM_LEDS - d;
+	double d = x - y;
+	if(d < 0){
+		d = -d;
+	}
+	double dWrapAround = NUM_LEDS - d;
 	return min(d, dWrapAround);
 	
 }
@@ -73,6 +76,7 @@ uint distance(uint x, uint y){
 void print(char* a, int b){
 	Serial.print(a);
 	Serial.print(b);
+	Serial.print(" ");
 }
 
 void printl(uint i){
@@ -96,26 +100,67 @@ int inrange(int a){
 	return a;
 }
 
+double mod(double d, double operand){
+	while(d < 0){
+		d += operand;
+	}
+	while(d > operand){
+		d -= operand;
+	}
+	return d;
+
+}
+
+
+inline double modring(double d){
+	return mod(d, NUM_LEDS);
+
+}
+
+inline double modone(double d){
+	return mod(d, 1);
+}
+
+inline double dabs(double d){
+	if(d < 0){
+		return -d;
+	}
+	return d;
+}
+
+
+
 bool animate(uint frameNumber, uint frameDurationMillis){
 
-	double rpeak = ( 0 + (25 * frameNumber * frameDurationMillis / 1000)) % NUM_LEDS;
-	double gpeak = (30 + (25 * frameNumber * frameDurationMillis / 1000)) % NUM_LEDS;
-	double bpeak = (60 + (25 * frameNumber * frameDurationMillis / 1000)) % NUM_LEDS;
+	double loopDuration = 30; // seconds for the entire loop
+	double loopRatio = 1.0 * frameNumber * frameDurationMillis / (1000 *  loopDuration);
+
+	double rpeak = modone( loopRatio * 11 ) * NUM_LEDS;
+	double rintensity = dabs(0.5 - modone(loopRatio * 22)) * 2 ;
+
+	double gpeak = modone( loopRatio * -7 + 1/3) * NUM_LEDS;
+	double gintensity = dabs(0.5 - modone(loopRatio * 14)) * 2 ;
+
+	
+	double bpeak = modone(loopRatio * 5 + 2 / 3) * NUM_LEDS;
+	double bintensity = dabs(0.5 - modone(loopRatio * 10)) * 2 ;
+
+	double ypeak = modone(loopRatio * -3 + 1 / 3) * NUM_LEDS;
+	double yintensity = dabs(0.5 - modone(loopRatio * 6)) * 2 ;
+
 	for(uint i = 0; i < NUM_LEDS; i++){
-	
-		int r = inrange(distance(rpeak, i) * 3 - 45);
-		int g = inrange(distance(gpeak, i) * 3 - 45);
-		int b = inrange(distance(bpeak, i) * 3 - 45);
+		// Distance: value between 0 and 45 (or: NUM_LEDS/2)
+		double r = inrange(distance(rpeak, i) * 2 - 90 + 5 + rintensity * 10)
+			+ inrange(distance(ypeak, i) * 2 - 90 + yintensity *10);
+		double g = inrange(distance(gpeak, i) * 2 - 90 + 5 + gintensity * 10)
+			+ inrange(distance(ypeak, i) * 2 - 90 + yintensity * 10);
+		int b = inrange(distance(bpeak, i) * 2 - 90 + bintensity * 10);
 		
-		
-		if(i == 0){
-		//	printl(r);
-		}
-		setLed(i, r, g,b);
-	}
-	//Serial.print("\n");
+		setLed(i, r, g , b);
+	}//*/
+	Serial.print("\n");
 	
-	return rpeak >= NUM_LEDS;
+	return loopRatio >= 1;
 }
 
 
