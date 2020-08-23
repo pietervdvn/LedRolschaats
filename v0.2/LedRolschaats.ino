@@ -2,10 +2,10 @@
 #include <FastLED.h>
 #include <math.h> 
 
-#define LED_PIN     D1
-#define NUM_LEDS    90
+#define LED_PIN     D4
+#define NUM_LEDS    120
 #define BRIGHTNESS  50
-#define LED_TYPE    WS2811
+#define LED_TYPE    WS2813
 #define COLOR_ORDER GRB
 
 CRGB leds[NUM_LEDS];
@@ -38,25 +38,26 @@ void setup() {
     delay( 1000 ); // power-up safety delay
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
+  
 }
-
 
 
 void loop()
 {
 	int frameNumber = 0;
 	int frameDuration = 10; // In milliseconds
+	
+	int buttonState = 0;
 	while(true){
 		clear();
-		
 		bool reset = animate(frameNumber, frameDuration);
 		if(reset){
 			frameNumber = 0;
 		}
 		
 		FastLED.show();
-		FastLED.delay(25);
 		frameNumber ++;
+		FastLED.delay(25);
     }
 }
 
@@ -150,11 +151,11 @@ bool animate(uint frameNumber, uint frameDurationMillis){
 
 	for(uint i = 0; i < NUM_LEDS; i++){
 		// Distance: value between 0 and 45 (or: NUM_LEDS/2)
-		double r = inrange(distance(rpeak, i) * 2 - 90 + 5 + rintensity * 10)
-			+ inrange(distance(ypeak, i) * 2 - 90 + yintensity *10);
-		double g = inrange(distance(gpeak, i) * 2 - 90 + 5 + gintensity * 10)
-			+ inrange(distance(ypeak, i) * 2 - 90 + yintensity * 10);
-		int b = inrange(distance(bpeak, i) * 2 - 90 + bintensity * 10);
+		double r = inrange(distance(rpeak, i) * 4 - 180 + 5 + rintensity * 30)
+			+ inrange(distance(ypeak, i) * 4 - 180 + yintensity *30);
+		double g = inrange(distance(gpeak, i) * 4 - 180 + 5 + gintensity * 30)
+			+ inrange(distance(ypeak, i) * 4 - 180 + yintensity * 50);
+		int b = inrange(distance(bpeak, i) * 4 - 180 + bintensity * 30);
 		
 		setLed(i, r, g , b);
 	}//*/
