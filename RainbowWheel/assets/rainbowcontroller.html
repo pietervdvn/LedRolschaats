@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg" href="./logo.svge"/>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <title>Rainbow Wheel Controller</title>
+    <style>        .slidecontainer {
+        width: 100%;
+    }
+
+    .slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 25px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+    }
+
+    .slider:hover {
+        opacity: 1;
+    }
+
+    .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: #ffef16;
+        cursor: pointer;
+    }
+
+    #red.slider::-webkit-slider-thumb {
+        background: #cc0000;
+    }
+
+    #green.slider::-webkit-slider-thumb {
+        background: #00aa00;
+    }
+
+    #blue.slider::-webkit-slider-thumb {
+        background: #4a71f6
+    }
+
+    .slider::-moz-range-thumb {
+        width: 25px;
+        height: 25px;
+        cursor: pointer;
+        background: #ffef16;
+    }
+
+    #red.slider::-moz-range-thumb {
+        background: #cc0000;
+    }
+
+    #green.slider::-moz-range-thumb {
+        background: #00aa00;
+    }
+
+    #blue.slider::-moz-range-thumb {
+        background: #4a71f6;
+    }    </style>
+</head>
+<body>
+<div class="slidecontainer"><h3>Colour intensity</h3>
+    <input type="range" min="0" max="200" value="50" class="slider" id="red">
+    <input type="range" min="0" max="200" value="50" class="slider" id="green">
+    <input type="range" min="0" max="200" value="50" class="slider" id="blue">
+    <h3>Speed</h3>
+    <input type="range" min="1" max="60" value="10" class="slider" id="speed">
+    <h3>Width</h3>
+    <input type="range" min="1" max="104" value="10" class="slider" id="width">
+    <label for="modepicker">Mode</label>
+    <select name="modepicker" id="modepicker">
+        <option value="0">Rotating rainbow/fixed colour</option>
+        <option value="1">Clock</option>
+        <option value="2">Moving lights</option>
+        <option value="3">Sectors</option>
+    </select>
+
+    <script>
+
+        let red = document.getElementById("red");
+        let green = document.getElementById("green");
+        let blue = document.getElementById("blue");
+        let speed = document.getElementById("speed");
+        let width = document.getElementById("width");
+        let modeElement = document.getElementById("modepicker");
+        let updatePending = true; /* Perform an update on load to set the clock*/
+        
+        function configure() {
+            if (!updatePending) {
+                return;
+            }
+            updatePending = false;
+            
+            let now = new Date();
+            let today = new Date();
+            today.setHours(0, 0, 0, 0);
+            /* Update the time while we are at it*/
+            let millisSinceEpoch = now - today;     
+            
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", `./configure?millisSinceToday=${millisSinceEpoch}&mode=${modeElement.value}&r=${red.value}&g=${green.value}&b=${blue.value}&w=${width.value}&s=${61 - speed.value}`);
+            xhr.send();
+        };
+
+        function chronic() {
+            configure();
+            window.setTimeout(chronic, 400);
+        };
+        chronic();
+
+        function update() {
+            updatePending = true;
+        };
+
+        modeElement.oninput = update;
+        red.oninput = update;
+        blue.oninput = update;
+        green.oninput = update;
+        speed.oninput = update;
+        width.oninput = update;
+    </script>
+</div>
+</body>
+</html>
+

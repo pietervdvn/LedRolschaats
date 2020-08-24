@@ -1,0 +1,16 @@
+{
+  "name": "Rainbow Controller",
+  "short_name": "Rainbow",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#fff",
+  "description": "Control your rainbow wheel",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./assets/logo.svg",
+      "sizes": "513x513",
+      "type": "image/svg"
+    }
+  ]
+} 
