@@ -52,6 +52,26 @@ void sendResponse(String path, WiFiClient client){
         parseQueryParamUInt("b", qp, &b);
         parseQueryParamUInt("w", qp, &w);
         parseQueryParamUInt("s", qp, &s);
+        
+        unsigned int ldid = 0;
+        parseQueryParamUInt("luftdatenid", qp, &ldid);
+        if(ldid != 0 && ldid != luftdatenid){
+            luftdatenid = ldid;
+            luftdatenLastUpdate = 0;
+            pm10 = 0;
+            pm25 = 0;
+        }
+        ldid = 0;
+        parseQueryParamUInt("pm10", qp, &ldid);
+        if(ldid != 0){
+            pm10 = ldid;
+        }
+        ldid = 0;
+        parseQueryParamUInt("pm25", qp, &ldid);
+        if(ldid != 0){
+            pm25 = ldid;
+        }
+        
         if(s <= 0){
             s = 1;
         }
@@ -91,8 +111,10 @@ void sendResponse(String path, WiFiClient client){
         client.print((wakeAt / 60) % 60);
         client.print(":");
         client.println(wakeAt % 60);
-                
-        
+        client.println("PM Values:<br/>PM2.5: ");            
+        client.println(pm25);
+        client.println("<br/>PM10: ");            
+        client.println(pm10);
         client.println("</body></html>");
         return;
     }

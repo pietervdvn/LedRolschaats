@@ -1,22 +1,20 @@
 
 
-long animation_start = system_get_time();
 void animate(){
     clear();
-    long diff = (system_get_time() - animation_start) / 1000.0;
     switch(mode){
-        case RGB_ROTATION: animateRGBBow(diff); break;
+        case RGB_ROTATION: animateRGBBow(); break;
         case CLOCK: animateClock(); break;
-        case MOUNTAINS: animateDragons(diff); break;
-        case DEBUG: debugLights(); break;
+        case MOUNTAINS: animateDragons(); break;
+        case SECTORS: debugLights(); break;
+        case LUFTDATEN: showAndUpdateLuftdaten(); break;
     }
     
     FastLED.show();
-    FastLED.delay(25);
+    FastLED.delay(10);
 }
 
 void debugLights(){
-    int w = NUM_LEDS / 24;
     for(int i = 0; i < 12; i++){
         if( i == currentSeconds() % 12){
             continue;
@@ -30,7 +28,7 @@ void debugLights(){
 
 void setSector(int sectorN, int r, int g, int b){
     sectorN = sectorN % 12;
-    int lengths[] = {/*12 o'clock*/9,9,8, /*3 oclock*/9,8,9, /*6 o'clock*/ 9,8,9,  9,9,8};
+    int lengths[] = {/*12 o'clock*/9,9,8, /*3 oclock*/9,9,9, /*6 o'clock*/ 9,8,9,  9,9,9};
     int start = 0;
     int stop = 0;
     for(int i = 0; i <= sectorN; i++){
@@ -61,7 +59,8 @@ void animateClock(){
 
 }
 
-void animateRGBBow(double millisSinceStart){
+void animateRGBBow(){
+     double millisSinceStart = totalMillisSinceMidnight();
      double redCenter = loopLocation(millisSinceStart, s * 1000);
      setLedMountain(redCenter, r,0,0, w);
      double greenCenter = loopLocation(millisSinceStart, s * 1000) + NUM_LEDS / 3;
@@ -70,9 +69,70 @@ void animateRGBBow(double millisSinceStart){
      setLedMountain(blueCenter, 0,0,b, w);
 }
 
+void showAndUpdateLuftdaten(){
+    showLuftDaten();
+    if(updatePending()){
+        setLed(0,255,255,255);
+        setLed(NUM_LEDS / 2,255,255,255);
+        FastLED.show();
+        Serial.println("Requesting data update...");
+        updateFineDustMeasurements();
+        setLed(0,0,0,0);
+        setLed(NUM_LEDS / 2,0,0,0);
+        FastLED.show();
+    }
+}
 
-void animateDragons(double millisSinceStart){
+void showLuftDaten(){
+
+    if(luftdatenState == NOT_YET_ASKED){
+        setSector(currentSeconds(), 0,100,0);
+        return;
+    }
     
+    if(luftdatenState == LUFTDATEN_DOWN){
+        setSector(currentSeconds(), 100,100,0);
+        return;
+    }
+    
+    if(luftdatenState == PARSE_ERROR){
+        setSector(currentSeconds(), 100,0,100);
+        return;
+    }    
+    
+    showEncodedLights(3 * NUM_LEDS / 4, pm25, barema25);
+    showEncodedLights(NUM_LEDS / 4, pm10, barema10);
+}
+
+void showEncodedLights(int center, float pmstate, float* barema){
+    int encodedState = mapState(pmstate, barema);
+    int r = 0;
+    int g = 0;
+    int b = 0;
+    double width = ((NUM_LEDS - 5) / 2) * pmstate / barema[EXTREMELY_BAD];
+    switch(encodedState){
+        case EXTREMELY_GOOD:
+        case VERY_GOOD:
+        case GOOD:
+            g = 200;
+            break;
+        case LOW_AVG:
+        case AVG:
+        case HIGH_AVG:
+            r = 200;
+            g = 200;
+            break;
+        case BAD:
+        case VERY_BAD:
+        case EXTREMELY_BAD:
+            r = 200;
+            break;
+    }
+    setLedMountain(center, r, g, b, min(0.0+width,0.0+ NUM_LEDS / 2));
+}
+
+void animateDragons(){
+    double millisSinceStart = totalMillisSinceMidnight();
     double rpeak = loopLocation(millisSinceStart, s * 1000 * 1);
     double bpeak = - loopLocation(millisSinceStart, s * 1000 * 3) + 2 * NUM_LEDS / 3;
     double gpeak = loopLocation(millisSinceStart, s * 1000 * 5) + NUM_LEDS / 3;
@@ -88,6 +148,9 @@ void animateDragons(double millisSinceStart){
 
 // Creates a hue, with 'center' as brightest point
 void setLedMountain(double center, int rbright, int gbright, int bbright, int ttl){
+    if(ttl <= 0){
+        return;
+    }
     center = modring(center);
     for (int i = 0; i < NUM_LEDS; i++) {
         double diff = distance(i, center);

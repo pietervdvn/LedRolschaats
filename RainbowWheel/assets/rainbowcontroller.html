@@ -10,12 +10,28 @@
         width: 100%;
     }
 
+    body {
+        background: black;
+        color: cyan;
+        font-family: monospace;
+        font-size: large
+    }
+
+    #sliders {
+        padding-left: 1em;
+        padding-right: 1em;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    
     .slider {
         -webkit-appearance: none;
         appearance: none;
         width: 100%;
-        height: 25px;
-        background: #d3d3d3;
+        height: 3px;
+        margin: 15px;
+        margin-left: 0;
+        background: cyan;
         outline: none;
         opacity: 0.7;
         -webkit-transition: .2s;
@@ -36,15 +52,15 @@
     }
 
     #red.slider::-webkit-slider-thumb {
-        background: #cc0000;
+        background: #ff0000;
     }
 
     #green.slider::-webkit-slider-thumb {
-        background: #00aa00;
+        background: #00ff00;
     }
 
     #blue.slider::-webkit-slider-thumb {
-        background: #4a71f6
+        background: #0000ff
     }
 
     .slider::-moz-range-thumb {
@@ -55,33 +71,45 @@
     }
 
     #red.slider::-moz-range-thumb {
-        background: #cc0000;
+        background: #ff0000;
     }
 
     #green.slider::-moz-range-thumb {
-        background: #00aa00;
+        background: #00ff00;
     }
 
     #blue.slider::-moz-range-thumb {
-        background: #4a71f6;
-    }    </style>
+        background: #0000ff;
+    }
+    </style>
 </head>
 <body>
-<div class="slidecontainer"><h3>Colour intensity</h3>
-    <input type="range" min="0" max="200" value="50" class="slider" id="red">
-    <input type="range" min="0" max="200" value="50" class="slider" id="green">
-    <input type="range" min="0" max="200" value="50" class="slider" id="blue">
-    <h3>Speed</h3>
-    <input type="range" min="1" max="60" value="10" class="slider" id="speed">
-    <h3>Width</h3>
-    <input type="range" min="1" max="104" value="10" class="slider" id="width">
+<div class="slidecontainer">
+    <div id="sliders">
+        <h3>Colour intensity</h3>
+        <input type="range" min="0" max="200" value="50" class="slider" id="red">
+        <input type="range" min="0" max="200" value="50" class="slider" id="green">
+        <input type="range" min="0" max="200" value="50" class="slider" id="blue">
+        <h3>Speed</h3>
+        <input type="range" min="1" max="60" value="40" class="slider" id="speed">
+        <h3>Width</h3>
+        <input type="range" min="1" max="104" value="10" class="slider" id="width">
+    </div>
+    <br/>
     <label for="modepicker">Mode</label>
     <select name="modepicker" id="modepicker">
         <option value="0">Rotating rainbow/fixed colour</option>
         <option value="1">Clock</option>
         <option value="2">Moving lights</option>
         <option value="3">Sectors</option>
+        <option value="4">Air quality monitor with LuftDaten</option>
     </select>
+
+    <h3>Wake up at</h3>
+    <input type="number" id="hour" name="hour" min="0" max="23" value="8">:
+    <input type="number" id="minutes" name="minutes" min="0" max="59" value="30">
+    <h3>Luftdaten sensor to show</h3>
+    <input type="number" id="luftdatenid" name="luftdatenid" min="0" value="7245">
 
     <script>
 
@@ -91,22 +119,28 @@
         let speed = document.getElementById("speed");
         let width = document.getElementById("width");
         let modeElement = document.getElementById("modepicker");
+        let hours = document.getElementById("hour");
+        let minutes = document.getElementById("minutes");
+        let luftdaten = document.getElementById("luftdatenid");
+
+
         let updatePending = true; /* Perform an update on load to set the clock*/
-        
+
         function configure() {
             if (!updatePending) {
                 return;
             }
             updatePending = false;
-            
+
             let now = new Date();
             let today = new Date();
             today.setHours(0, 0, 0, 0);
             /* Update the time while we are at it*/
-            let millisSinceEpoch = now - today;     
-            
+            let millisSinceEpoch = now - today;
+            let wakeUpAt = (Number(hours.value) * 60 + Number(minutes.value)) * 60;
+            let query = `millisSinceToday=${millisSinceEpoch}&mode=${modeElement.value}&r=${red.value}&g=${green.value}&b=${blue.value}&w=${width.value}&s=${61 - speed.value}&wakeAt=${wakeUpAt}&luftdatenid=${luftdaten.value}`;
             var xhr = new XMLHttpRequest();
-            xhr.open("GET", `./configure?millisSinceToday=${millisSinceEpoch}&mode=${modeElement.value}&r=${red.value}&g=${green.value}&b=${blue.value}&w=${width.value}&s=${61 - speed.value}`);
+            xhr.open("GET", `./configure?${query}`);
             xhr.send();
         };
 
@@ -126,6 +160,8 @@
         green.oninput = update;
         speed.oninput = update;
         width.oninput = update;
+        hours.oninput = update;
+        minutes.oninput = update;
     </script>
 </div>
 </body>
