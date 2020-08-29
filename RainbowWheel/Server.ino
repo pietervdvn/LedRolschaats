@@ -46,7 +46,6 @@ void sendResponse(String path, WiFiClient client){
         Serial.println(qp);
         
         parseQueryParamUInt("mode", qp, &mode);
-        parseQueryParamInt("wakeAt", qp, &wakeAt);
         parseQueryParamUInt("r", qp, &r);
         parseQueryParamUInt("g", qp, &g);
         parseQueryParamUInt("b", qp, &b);
