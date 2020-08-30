@@ -9,6 +9,8 @@ void animate(){
         case MOUNTAINS: animateDragons(); break;
         case SECTORS: debugLights(); break;
         case LUFTDATEN: showAndUpdateLuftdaten(); break;
+        case CHRISTMAS:
+            animateChristmassLights(); break;
         case ACCESS_POINT_MODE: 
             digitalWrite(STATUS_LED, HIGH);
             setLed(currentSeconds(), 100,0,0); 
@@ -18,7 +20,7 @@ void animate(){
     }
     
     FastLED.show();
-    FastLED.delay(10);
+    FastLED.delay(25);
 }
 
 void debugLights(){
@@ -50,6 +52,15 @@ void setSector(int sectorN, int r, int g, int b){
         addLed(i, r, g, b);
     }
     
+}
+
+void animateChristmassLights(){
+    
+    int time = mod((1.0 * totalMillisSinceMidnight() * s), 1000);
+    setLed(0, r * distanceAround(0, time, 1000),0,0);
+    setLed(1, 0, g * distanceAround(500, time, 1000), 0);
+    setLed(2, 0, 0, b * distanceAround(750, time, 1000));
+
 }
 
 void animateClock(){
@@ -177,7 +188,17 @@ double distance(double x, double y){
 	}
 	double dWrapAround = NUM_LEDS - d;
 	return min(d, dWrapAround);
-	
+}
+
+double distanceAround(double x, double y, double length){
+	// Distance is modular,
+	// So if distance is > NUM_LEDS/2, it wraps around
+	double d = x - y;
+	if(d < 0){
+		d = -d;
+	}
+	double dWrapAround = length - d;
+	return min(d, dWrapAround) / length;
 }
 
 double loopLocation(double currentTime, double rotationTime){

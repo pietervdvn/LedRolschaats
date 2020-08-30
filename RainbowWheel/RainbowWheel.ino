@@ -9,8 +9,6 @@
 #include <FastLED.h>
 #include <EEPROM.h>
 
-
-
 #define LED_PIN     D1
 #define NUM_LEDS    105
 #define BRIGHTNESS  255
@@ -20,6 +18,11 @@
 // Should be high to let the led shine
 #define STATUS_LED D7
 
+#define CAPACITIVE_READ_PIN A0
+#define CAPACITIVE_SEND_PIN D6
+
+
+
 CRGB leds[NUM_LEDS];
 
 #define RGB_ROTATION 0
@@ -27,6 +30,7 @@ CRGB leds[NUM_LEDS];
 #define MOUNTAINS 2
 #define SECTORS 3
 #define LUFTDATEN 4
+#define CHRISTMAS 5
 #define ACCESS_POINT_MODE 1000
 
 unsigned int mode = 0;
@@ -141,51 +145,53 @@ unsigned long timeOfBootMillis = 0;
 #define LUFTDATEN_LOCATION 778
 
 void setup() {
-  Serial.begin(115200);
-  FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness(  BRIGHTNESS );
+    Serial.begin(115200);
   
-  pinMode(STATUS_LED, OUTPUT);
-  digitalWrite(STATUS_LED, HIGH);
-  
-  delay(1000);
+    pinMode(CAPACITIVE_READ_PIN, INPUT);
+    pinMode(CAPACITIVE_SEND_PIN, OUTPUT);
   
   
-  /*
-  * We save 3 strings of max 255 chars:
-  * wifi_ssid
-  * wifi_password
-  * hostname
-  *
-  * Furthermore, we save a telltale-string at location 0 namely "rainbow" in order to see if things are initialized already
-  * At last, we save one extra int for the luftdaten-id
-  */
-  EEPROM.begin(256*3 + 10 + 4);
-  delay(150);
-  String telltale = readStringFromEEPROM(1);
-  Serial.println("Telltale is:");
-  Serial.println(telltale);
-  if(telltale.length() == 7 && telltale.equals("rainbow")){
-    Serial.println("This device has run the rainbow-led code before");
-  }else{
-    Serial.println("Initializing EEPROM");
-    writeStringToEEPROM(WIFI_SSID_LOCATION, "");
-    writeStringToEEPROM(WIFI_PASSWORD_LOCATION, "");
-    writeStringToEEPROM(HOSTNAME_LOCATION, "");
-    writeStringToEEPROM(1, "rainbow");
-    Serial.println("Init done");
-  }
- 
-
- 
-  clear();
+    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+    FastLED.setBrightness(  BRIGHTNESS );
   
-  setLed(0, 100, 100, 0);
-  setLed(NUM_LEDS/3, 100, 100, 0);
-  setLed(2 * NUM_LEDS/3, 100, 100, 0);
-  
-  FastLED.show();
-  setupWifi();
+    pinMode(STATUS_LED, OUTPUT);
+    digitalWrite(STATUS_LED, HIGH);
+    
+    delay(1000);
+    
+    
+    /*
+    * We save 3 strings of max 255 chars:
+    * wifi_ssid
+    * wifi_password
+    * hostname
+    *
+    * Furthermore, we save a telltale-string at location 0 namely "rainbow" in order to see if things are initialized already
+    * At last, we save one extra int for the luftdaten-id
+    */
+    EEPROM.begin(256*3 + 10 + 4);
+    delay(150);
+    String telltale = readStringFromEEPROM(1);
+    Serial.println("Telltale is:");
+    Serial.println(telltale);
+    if(telltale.length() == 7 && telltale.equals("rainbow")){
+      Serial.println("This device has run the rainbow-led code before");
+    }else{
+      Serial.println("Initializing EEPROM");
+      writeStringToEEPROM(WIFI_SSID_LOCATION, "");
+      writeStringToEEPROM(WIFI_PASSWORD_LOCATION, "");
+      writeStringToEEPROM(HOSTNAME_LOCATION, "");
+      writeStringToEEPROM(1, "rainbow");
+      Serial.println("Init done");
+    }
+                clear();
+    
+    setLed(0, 100, 100, 0);
+    setLed(NUM_LEDS/3, 100, 100, 0);
+    setLed(2 * NUM_LEDS/3, 100, 100, 0);
+    
+    FastLED.show();
+    setupWifi();
  
 }
 
@@ -218,19 +224,28 @@ void setupWifi(){
   Serial.print("Attempting to connect to wifi ");
   Serial.println(wifi_ssid);
   WiFi.begin(wifi_ssid,wifi_password);
-  int count = 0;
+  int count = 10 * 60;
+  int maxCount = count;
   while (WiFi.status() != WL_CONNECTED) {
-    delay(50);
+    delay(100);
     
     clear();
-    setLed(count, 100,100,100);
-    setLed(count + NUM_LEDS / 3, 100,100,100);
-    setLed(count + 2 * NUM_LEDS / 3, 100,100,100);
-    FastLED.show();
     
+    int maxLed = (1.0 * NUM_LEDS * count / maxCount);
+    for(int i = 0; i < maxLed; i++){
+        setLed(i, 0,100,0);
+    }
+    
+    FastLED.show();
+    count --;
     Serial.print(".");
-    count ++;
-    if(count > 200*30){
+    if(count % 100 == 0){
+        Serial.print("\nAttempting to connect with ");
+        Serial.print(wifi_ssid);
+        Serial.print(" ");
+        Serial.println(wifi_password);
+    }
+    if(count <= 0){
         // We reached a timeout
         Serial.println("Waiting for wifi connection: timeout. Using AP-mode");
         setupAccessPoint();
@@ -250,39 +265,35 @@ void setupWifi(){
   mode = RGB_ROTATION;
 }
 
-double analogAvg = 0;
 
-#define measurementCount 25
-int measurements [measurementCount];
-int currentIndex = -1;
-double detectTouch(){
-    if(currentIndex == -1){
-        for(int i = 0; i < measurementCount; i++){
-            measurements[i] = 0;
-        }
-        currentIndex = 0;
-    }
-    measurements[currentIndex] = analogRead(A0);
-    Serial.print("> ");
-    Serial.println(measurements[currentIndex]);
-    currentIndex = (currentIndex + 1) % measurementCount;
-    int sum = 0;
-    for(int i = 0; i < measurementCount; i++){
-        sum += measurements[i];
-    }
-    return 1.0 * sum / measurementCount;
-}
-
-
-int lastMdnsUpdate = 0;
-
+#define CAPACITIVE_MEASUREMENT_COUNT 10
+long lastTouchMoment = 0;
 void loop(){
-   animate();
-   handleClient(server.available());   // Listen for incoming clients
-   if(totalSecondsSinceMidnight() >= lastMdnsUpdate + 1){
-      MDNS.update();
-      lastMdnsUpdate = totalSecondsSinceMidnight();
-   }
+    digitalWrite(CAPACITIVE_SEND_PIN, HIGH);
+    noInterrupts();
+    int measurements[CAPACITIVE_MEASUREMENT_COUNT];
+    for(int i = 0; i < CAPACITIVE_MEASUREMENT_COUNT; i++){
+        measurements[i] = analogRead(CAPACITIVE_READ_PIN);
+    }
+    digitalWrite(CAPACITIVE_SEND_PIN, LOW);
+    interrupts();
+
+    delay(50);
+    int sum = 0;
+    for(int i = 0; i < CAPACITIVE_MEASUREMENT_COUNT; i++){
+           sum += measurements[i];
+    }
+    if(sum > 3000){
+        lastTouchMoment = system_get_time() / 1000000;
+    }
+     
+
+    animate();
+    handleClient(server.available());   // Listen for incoming clients
+    if(totalSecondsSinceMidnight() >= lastMdnsUpdate + 1){
+       MDNS.update();
+       lastMdnsUpdate = totalSecondsSinceMidnight();
+    }
 }
 
 

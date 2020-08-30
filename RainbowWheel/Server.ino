@@ -105,7 +105,7 @@ void sendResponse(String path, WiFiClient client){
        return;
     }
 
-    if(mode == ACCESS_POINT_MODE){
+    if(mode == ACCESS_POINT_MODE || path.startsWith("setup")){
         client.println(wifiselect);
         return;
     }
