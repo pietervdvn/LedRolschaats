@@ -7,11 +7,13 @@
 
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
+#include <EEPROM.h>
+
 
 
 #define LED_PIN     D1
 #define NUM_LEDS    106
-#define BRIGHTNESS  100
+#define BRIGHTNESS  255
 #define LED_TYPE    WS2813
 #define COLOR_ORDER GRB
 
@@ -57,6 +59,7 @@ int luftdatenLastUpdate = 0;
 #define UP_TO_DATE 1
 #define LUFTDATEN_DOWN 2
 #define PARSE_ERROR 3
+#define ACCESS_POINT_MODE 1000
 int luftdatenState = NOT_YET_ASKED;
 
 
@@ -77,41 +80,132 @@ const long timeoutTime = 2000;
 
 unsigned long timeOfBootMillis = 0;
 
+ void writeStringToEEPROM(int addrOffset, const String &strToWrite)
+ {
+   byte len = strToWrite.length();
+   EEPROM.write(addrOffset, len);
+   for (int i = 0; i < len; i++)
+   {
+     EEPROM.write(addrOffset + 1 + i, strToWrite[i]);
+   }
+ }
+ 
+  void writeIntToEEProm(int addrOffset, int value)
+  {
+    byte len = 4;
+    for(int i = 0; i < len; i++){
+        EEPROM.write(addrOffset + i, value % 256);
+        Serial.print("> Written ");
+        Serial.println(value % 256);
+        value = value / 256;
+    }
+  }
+  
+    int readIntFromEEProm(int addrOffset)
+    {
+      byte len = 4;
+      int value = 0;
+      for(int i = 3; i >= 0; i--){
+          value = value * 256;
+          value += EEPROM.read(addrOffset + i);
+            Serial.print("> Read ");
+                  Serial.println(EEPROM.read(addrOffset + i));
+                  Serial.println(value);
+           Serial.println(value);
+      }
+      return value;
+    }
+    
+  
+ 
+ String readStringFromEEPROM(int addrOffset) {
+   int newStrLen = EEPROM.read(addrOffset);
+   char data[newStrLen + 1];
+   Serial.print("REading ");
+   Serial.println(newStrLen);
+   for (int i = 0; i < newStrLen; i++)
+   {
+     data[i] = EEPROM.read(addrOffset + 1 + i);
+   }
+   data[newStrLen] = '\0';
+   return String(data);
+ }
+
+
+
+#define WIFI_SSID_LOCATION 10
+#define WIFI_PASSWORD_LOCATION 265
+#define HOSTNAME_LOCATION 522
+#define LUFTDATEN_LOCATION 778
+
 void setup() {
   Serial.begin(115200);
-  pinMode(A0, INPUT);
-
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-  FastLED.setBrightness(  BRIGHTNESS );
-  
+   FastLED.setBrightness(  BRIGHTNESS );
+    
+  /*
+  * We save 3 strings of max 255 chars:
+  * wifi_ssid
+  * wifi_password
+  * hostname
+  *
+  * Furthermore, we save a telltale-string at location 0 namely "rainbow" in order to see if things are initialized already
+  * At last, we save one extra int for the luftdaten-id
+  */
+  EEPROM.begin(256*3 + 10 + 4);
+  delay(150);
+  String telltale = readStringFromEEPROM(0);
+  if(telltale.length() == 7 && telltale.equals("rainbow")){
+    Serial.println("This device has run the rainbow-led code before");
+  }else{
+    Serial.println("Initializing EEPROM");
+    writeStringToEEPROM(WIFI_SSID_LOCATION, "");
+    writeStringToEEPROM(WIFI_PASSWORD_LOCATION, "");
+    writeStringToEEPROM(HOSTNAME_LOCATION, "");
+    delay(150);
+    EEPROM.commit();
+    delay(150);
+    Serial.println("Init done");
+  }
+ 
+
+ 
   clear();
   setLed(0,0,50,0);
   FastLED.show();
-        
+       
   setupWifi();
-  
+ 
 }
 
 void setupAccessPoint(){
 
-    clear();
-    setLed(0, 100,0,0);
-    setLed(NUM_LEDS / 2, 100,0,0);
-    FastLED.show();
-
+    delay(10000);
+    // uint64_t chipid = ESP.getChipId(); //The chip ID is essentially its MAC address(length: 6 bytes).
+    WiFi.softAP("rainbow-ledstrip-");
+    mode = ACCESS_POINT_MODE;
+    server.begin();
+    Serial.println("AP setup done");
 }
+
 
 // Connect to Wi-Fi network with SSID and password
 void setupWifi(){
-  WiFi.hostname(hostname);
-  wifi_station_set_hostname(hostname);
+
+    
+    wifi_ssid = readStringFromEEPROM(WIFI_SSID_LOCATION);
+    wifi_password = readStringFromEEPROM(WIFI_PASSWORD_LOCATION);
+    hostname = readStringFromEEPROM(HOSTNAME_LOCATION);
+
+    WiFi.hostname(hostname);
+    if(wifi_ssid.length() == 0){
+        Serial.println("Wifi ssid is empty -> using access point");
+        setupAccessPoint();
+        return;
+    }
   
-  
-  if(wifi_ssid == ""){
-    setupAccessPoint();
-    return;
-  }
-  
+  Serial.print("Attempting to connect to wifi ");
+  Serial.println(wifi_ssid);
   WiFi.begin(wifi_ssid,wifi_password);
   int count = 0;
   while (WiFi.status() != WL_CONNECTED) {
@@ -132,12 +226,14 @@ void setupWifi(){
   // Print local IP address and start web server
   Serial.println("");
   Serial.println("WiFi connected.");
+  
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
   
   AdvertiseServices();
   
   server.begin();
+  mode = RGB_ROTATION;
 }
 
 double analogAvg = 0;
@@ -164,20 +260,15 @@ double detectTouch(){
 }
 
 
-int lastMdnsUpdate = -15*60;
+int lastMdnsUpdate = 0;
 
 void loop(){
-
    animate();
    handleClient(server.available());   // Listen for incoming clients
-   MDNS.update();
-   if(totalSecondSinceMidnight() >= lastMdnsUpdate + 15*60){
+   if(totalSecondsSinceMidnight() >= lastMdnsUpdate + 1){
       MDNS.update();
-      lastMdnsUpdate = totalSecondSinceMidnight();
+      lastMdnsUpdate = totalSecondsSinceMidnight();
    }
-   
-
-   
 }
 
 
@@ -208,6 +299,7 @@ void AdvertiseServices() {
    {
      // Add service to MDNS-SD
      MDNS.addService("http", "tcp", 80);
+     MDNS.update(); 
      Serial.println("Local domain registered!");
    }
    

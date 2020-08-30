@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg" href="./logo.svge"/>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <title>Rainbow Wheel Controller</title>
+    <style>        .slidecontainer {
+        width: 100%;
+    }
+
+    body {
+        background: black;
+        color: cyan;
+        font-family: monospace;
+        font-size: large
+    }
+    </style>
+</head>
+<body>
+<div class="slidecontainer">
+    <label for="ssid">Wifi network name</label><input type="text" id="ssid" name="ssid">
+    <br/>
+    <label for="password">Wifi password</label><input type="password" id="password" name="password">
+    <br/>
+    <label for="hostname">Hostname (the device will be visible as hostname.local)</label><input type="text" id="hostname" name="hostname" value="rainbow" >
+    <br/>
+    <button type="button" id="apply">Apply</button>
+    <script>
+
+        let ssid = document.getElementById("ssid");
+        let password = document.getElementById("password");
+        let hostname = document.getElementById("hostname");
+        let apply = document.getElementById("apply");
+        function configure() {
+            let query = `ssid=${ssid.value}&password=${password.value}&hostname=${hostname.value}`;
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", `./configure?${query}`);
+            xhr.send();
+        };
+        apply.onclick = configure;
+    </script>
+</div>
+</body>
+</html>
+

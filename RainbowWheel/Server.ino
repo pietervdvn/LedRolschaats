@@ -11,21 +11,33 @@ String parseQueryParam(String key, String queryParams){
     queryParams = queryParams.substring(0, endIndex);
     return queryParams;     
 }
-
-void parseQueryParamInt(String key, String queryParams, int* assignto){
+bool parseQueryParamString(String key, String queryParams, String* assignto){
     String qp = parseQueryParam(key, queryParams);
     if(qp.length() == 0){
-        return;
+        return false;
+    }
+    Serial.print("Read and assigned ");
+    Serial.print(key);
+    *assignto = qp;
+    return true;
+}
+
+
+bool parseQueryParamInt(String key, String queryParams, int* assignto){
+    String qp = parseQueryParam(key, queryParams);
+    if(qp.length() == 0){
+        return false;
     }
     Serial.print("Read and assigned ");
     Serial.print(key);
     *assignto = qp.toInt();
+    return true;
 }
 
-void parseQueryParamUInt(String key, String queryParams, unsigned int* assignto){
+bool parseQueryParamUInt(String key, String queryParams, unsigned int* assignto){
     String qp = parseQueryParam(key, queryParams);
     if(qp.length() == 0){
-        return;
+        return false;
     }
     int uint = qp.toInt();
     if(uint < 0){
@@ -36,13 +48,11 @@ void parseQueryParamUInt(String key, String queryParams, unsigned int* assignto)
     Serial.print(key);
     Serial.print(": ");
     Serial.println(*assignto);
-            
+    return true;  
 }
 
-void sendResponse(String path, WiFiClient client){
-    if(path.startsWith("configure?")){
+void configure(String qp){
         Serial.println("Configuring...");
-        String qp = path.substring(path.indexOf("?") + 1);
         Serial.println(qp);
         
         parseQueryParamUInt("mode", qp, &mode);
@@ -53,22 +63,12 @@ void sendResponse(String path, WiFiClient client){
         parseQueryParamUInt("s", qp, &s);
         
         unsigned int ldid = 0;
-        parseQueryParamUInt("luftdatenid", qp, &ldid);
-        if(ldid != 0 && ldid != luftdatenid){
+        if(parseQueryParamUInt("luftdatenid", qp, &ldid) && ldid != luftdatenid){
+           // reset the measurements
             luftdatenid = ldid;
             luftdatenLastUpdate = 0;
-            pm10 = 0;
-            pm25 = 0;
-        }
-        ldid = 0;
-        parseQueryParamUInt("pm10", qp, &ldid);
-        if(ldid != 0){
-            pm10 = ldid;
-        }
-        ldid = 0;
-        parseQueryParamUInt("pm25", qp, &ldid);
-        if(ldid != 0){
-            pm25 = ldid;
+                       pm10 = 0;
+                       pm25 = 0;
         }
         
         if(s <= 0){
@@ -78,17 +78,42 @@ void sendResponse(String path, WiFiClient client){
             w = 1;
         }
         unsigned int millisSinceEpoch = 0;
-        parseQueryParamUInt("millisSinceToday", qp, &millisSinceEpoch);
-        if(millisSinceEpoch != 0){
+        if(parseQueryParamUInt("millisSinceToday", qp, &millisSinceEpoch)){
             Serial.println("Got millis since epoch:");
             Serial.println(millisSinceEpoch);
             timeOfBootMillis = millisSinceEpoch - (system_get_time() / 1000000);
         }
-                
-        client.println("Config OK");
-        return;
+        
+        
+        if(parseQueryParamString("ssid", qp, &wifi_ssid)){
+            parseQueryParamString("password", qp, &wifi_password);
+            parseQueryParamString("hostname", qp, &hostname);
+            
+            writeStringToEEPROM(WIFI_SSID_LOCATION, wifi_ssid);
+            writeStringToEEPROM(WIFI_PASSWORD_LOCATION, wifi_password);
+            writeStringToEEPROM(HOSTNAME_LOCATION, hostname);
+            delay(200);
+            delay(150);
+            EEPROM.commit();
+            delay(150);
+            Serial.println("Wifi credentials saved into EEProm");
+            
+            setupWifi();
+        }
+}
+
+void sendResponse(String path, WiFiClient client){
+    if(path.startsWith("configure?")){
+       configure(path.substring(path.indexOf("?") + 1));
+       client.println("Config OK");
+       return;
     }
 
+    if(mode == ACCESS_POINT_MODE){
+        client.println(wifiselect);
+        return;
+    }
+    
     if(path.startsWith("debug")){
         client.println("<html><head><title>Rainbowwheel Debug page</title></head><body>");
         client.println("Rainbowwheel 0.1 - welcome<br/>Uptime is:");
@@ -104,13 +129,7 @@ void sendResponse(String path, WiFiClient client){
         client.print(":");
         client.println(currentSeconds());
         
-        client.println("<br/>Wake up at: ");
-        client.print(wakeAt / (60 * 60));
-        client.print(":");
-        client.print((wakeAt / 60) % 60);
-        client.print(":");
-        client.println(wakeAt % 60);
-        client.println("PM Values:<br/>PM2.5: ");            
+        client.println("<br/>PM Values:<br/>PM2.5: ");            
         client.println(pm25);
         client.println("<br/>PM10: ");            
         client.println(pm10);
