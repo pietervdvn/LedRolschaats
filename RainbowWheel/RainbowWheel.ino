@@ -12,10 +12,13 @@
 
 
 #define LED_PIN     D1
-#define NUM_LEDS    106
+#define NUM_LEDS    105
 #define BRIGHTNESS  255
 #define LED_TYPE    WS2813
 #define COLOR_ORDER GRB
+
+// Should be high to let the led shine
+#define STATUS_LED D7
 
 CRGB leds[NUM_LEDS];
 
@@ -24,6 +27,7 @@ CRGB leds[NUM_LEDS];
 #define MOUNTAINS 2
 #define SECTORS 3
 #define LUFTDATEN 4
+#define ACCESS_POINT_MODE 1000
 
 unsigned int mode = 0;
 
@@ -82,12 +86,17 @@ unsigned long timeOfBootMillis = 0;
 
  void writeStringToEEPROM(int addrOffset, const String &strToWrite)
  {
-   byte len = strToWrite.length();
-   EEPROM.write(addrOffset, len);
-   for (int i = 0; i < len; i++)
-   {
-     EEPROM.write(addrOffset + 1 + i, strToWrite[i]);
-   }
+    byte len = strToWrite.length();
+    EEPROM.write(addrOffset, len);
+    for (int i = 0; i < len; i++)
+    {
+        EEPROM.write(addrOffset + 1 + i, strToWrite[i]);
+    }
+    EEPROM.commit();
+    Serial.print("Written string to eeprom: index: ");
+    Serial.print(addrOffset);
+    Serial.print("; length: ");
+    Serial.print(len);
  }
  
   void writeIntToEEProm(int addrOffset, int value)
@@ -95,10 +104,9 @@ unsigned long timeOfBootMillis = 0;
     byte len = 4;
     for(int i = 0; i < len; i++){
         EEPROM.write(addrOffset + i, value % 256);
-        Serial.print("> Written ");
-        Serial.println(value % 256);
         value = value / 256;
     }
+    EEPROM.commit();
   }
   
     int readIntFromEEProm(int addrOffset)
@@ -108,10 +116,6 @@ unsigned long timeOfBootMillis = 0;
       for(int i = 3; i >= 0; i--){
           value = value * 256;
           value += EEPROM.read(addrOffset + i);
-            Serial.print("> Read ");
-                  Serial.println(EEPROM.read(addrOffset + i));
-                  Serial.println(value);
-           Serial.println(value);
       }
       return value;
     }
@@ -121,8 +125,6 @@ unsigned long timeOfBootMillis = 0;
  String readStringFromEEPROM(int addrOffset) {
    int newStrLen = EEPROM.read(addrOffset);
    char data[newStrLen + 1];
-   Serial.print("REading ");
-   Serial.println(newStrLen);
    for (int i = 0; i < newStrLen; i++)
    {
      data[i] = EEPROM.read(addrOffset + 1 + i);
@@ -141,8 +143,14 @@ unsigned long timeOfBootMillis = 0;
 void setup() {
   Serial.begin(115200);
   FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
-   FastLED.setBrightness(  BRIGHTNESS );
-    
+  FastLED.setBrightness(  BRIGHTNESS );
+  
+  pinMode(STATUS_LED, OUTPUT);
+  digitalWrite(STATUS_LED, HIGH);
+  
+  delay(1000);
+  
+  
   /*
   * We save 3 strings of max 255 chars:
   * wifi_ssid
@@ -154,7 +162,9 @@ void setup() {
   */
   EEPROM.begin(256*3 + 10 + 4);
   delay(150);
-  String telltale = readStringFromEEPROM(0);
+  String telltale = readStringFromEEPROM(1);
+  Serial.println("Telltale is:");
+  Serial.println(telltale);
   if(telltale.length() == 7 && telltale.equals("rainbow")){
     Serial.println("This device has run the rainbow-led code before");
   }else{
@@ -162,27 +172,28 @@ void setup() {
     writeStringToEEPROM(WIFI_SSID_LOCATION, "");
     writeStringToEEPROM(WIFI_PASSWORD_LOCATION, "");
     writeStringToEEPROM(HOSTNAME_LOCATION, "");
-    delay(150);
-    EEPROM.commit();
-    delay(150);
+    writeStringToEEPROM(1, "rainbow");
     Serial.println("Init done");
   }
  
 
  
   clear();
-  setLed(0,0,50,0);
+  
+  setLed(0, 100, 100, 0);
+  setLed(NUM_LEDS/3, 100, 100, 0);
+  setLed(2 * NUM_LEDS/3, 100, 100, 0);
+  
   FastLED.show();
-       
   setupWifi();
  
 }
 
 void setupAccessPoint(){
-
-    delay(10000);
-    // uint64_t chipid = ESP.getChipId(); //The chip ID is essentially its MAC address(length: 6 bytes).
-    WiFi.softAP("rainbow-ledstrip-");
+    if(hostname.length() == 0){
+        hostname= "rainbow-pietervdvn";
+    }
+    WiFi.softAP("rainbow-ledstrip-pietervdvn");
     mode = ACCESS_POINT_MODE;
     server.begin();
     Serial.println("AP setup done");
@@ -212,13 +223,16 @@ void setupWifi(){
     delay(50);
     
     clear();
-    setLed(count, 100,100,0);
+    setLed(count, 100,100,100);
+    setLed(count + NUM_LEDS / 3, 100,100,100);
+    setLed(count + 2 * NUM_LEDS / 3, 100,100,100);
     FastLED.show();
     
     Serial.print(".");
     count ++;
     if(count > 200*30){
         // We reached a timeout
+        Serial.println("Waiting for wifi connection: timeout. Using AP-mode");
         setupAccessPoint();
         return;
     }

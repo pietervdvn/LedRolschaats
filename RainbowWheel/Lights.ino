@@ -2,18 +2,20 @@
 
 void animate(){
     clear();
-    /*switch(mode){
+    digitalWrite(STATUS_LED, LOW);
+    switch(mode){
         case RGB_ROTATION: animateRGBBow(); break;
         case CLOCK: animateClock(); break;
         case MOUNTAINS: animateDragons(); break;
         case SECTORS: debugLights(); break;
         case LUFTDATEN: showAndUpdateLuftdaten(); break;
-        case ACCESS_POINT_MODE: setLed(0, 100,0,0); break;
+        case ACCESS_POINT_MODE: 
+            digitalWrite(STATUS_LED, HIGH);
+            setLed(currentSeconds(), 100,0,0); 
+            setLed(currentSeconds() + NUM_LEDS/3, 100,0,0); 
+            setLed(currentSeconds() + 2 * NUM_LEDS/3, 100,0,0); 
+            break;
     }
-    */
-    setLed(0,100,100,100);
-    setLed(1,100,100,100);
-    setLed(2,100,100,100);
     
     FastLED.show();
     FastLED.delay(10);

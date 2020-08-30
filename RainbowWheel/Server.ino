@@ -92,10 +92,6 @@ void configure(String qp){
             writeStringToEEPROM(WIFI_SSID_LOCATION, wifi_ssid);
             writeStringToEEPROM(WIFI_PASSWORD_LOCATION, wifi_password);
             writeStringToEEPROM(HOSTNAME_LOCATION, hostname);
-            delay(200);
-            delay(150);
-            EEPROM.commit();
-            delay(150);
             Serial.println("Wifi credentials saved into EEProm");
             
             setupWifi();
