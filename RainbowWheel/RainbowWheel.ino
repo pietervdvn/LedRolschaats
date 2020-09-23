@@ -43,6 +43,8 @@ unsigned int w = 10;
 // Speed of a mountain by mode (in seconds/rotation)
 unsigned int s = 5;
 
+double touchExtra = 0;
+int touchCalibration = 2900;
 
 #define EXTREMELY_GOOD 0
 #define VERY_GOOD 1
@@ -263,37 +265,82 @@ void setupWifi(){
   
   server.begin();
   mode = RGB_ROTATION;
+  calibrateTouch();
 }
 
-
-#define CAPACITIVE_MEASUREMENT_COUNT 10
-long lastTouchMoment = 0;
-void loop(){
-    digitalWrite(CAPACITIVE_SEND_PIN, HIGH);
+#define CAPACITIVE_MEASUREMENT_COUNT 50
+int cyclesSinceLastTouch = 1000;
+/*
+THe analog pin is directly connected with the wheel, the CAPACITVE_SEND_PIN is connected to the wheel via a 1M-Ohm resistor.
+By setting the pin to high, the wheel will "slowly" rise it's voltage.
+By measuring the time needed, we can detect touch events on the wheel
+*/
+int readTouchValue(){
     noInterrupts();
+    digitalWrite(CAPACITIVE_SEND_PIN, HIGH);
     int measurements[CAPACITIVE_MEASUREMENT_COUNT];
     for(int i = 0; i < CAPACITIVE_MEASUREMENT_COUNT; i++){
         measurements[i] = analogRead(CAPACITIVE_READ_PIN);
     }
     digitalWrite(CAPACITIVE_SEND_PIN, LOW);
     interrupts();
-
-    delay(50);
+    delay(25);
+    
     int sum = 0;
     for(int i = 0; i < CAPACITIVE_MEASUREMENT_COUNT; i++){
            sum += measurements[i];
     }
-    if(sum > 3000){
-        lastTouchMoment = system_get_time() / 1000000;
+    return sum;
+}
+
+#define CALIBRATION_TIME_SECONDS 30
+void calibrateTouch(){
+    Serial.println("Calibrating touch");
+    int calibrationStart = totalMillisSinceMidnight();
+    touchCalibration = 0;
+    while(totalMillisSinceMidnight() < calibrationStart + CALIBRATION_TIME_SECONDS * 1000){
+        int touchValue = readTouchValue();
+        if(touchValue > touchCalibration){
+            Serial.println("New touch value");
+            Serial.println(touchValue);
+            touchCalibration = touchValue;
+        }
+        clear();
+        int timePassed = (totalMillisSinceMidnight() - calibrationStart);
+        setLed(NUM_LEDS * timePassed / (CALIBRATION_TIME_SECONDS * 1000),0,0,100);
+        FastLED.show();
     }
-     
+    touchCalibration = touchCalibration * 110 / 100;
+}
+
+void loop(){
+    int touchValue = readTouchValue();
+    cyclesSinceLastTouch ++;
+    if(cyclesSinceLastTouch > 1000){
+        cyclesSinceLastTouch = 1000;
+    }
+    if((touchCalibration > 0 &&  touchValue > touchCalibration) || (touchCalibration < 0 && touchValue < -touchCalibration)){
+        cyclesSinceLastTouch = 0;
+        touchExtra += 1;
+    }
+    
+    if(cyclesSinceLastTouch < 5){
+        touchExtra += 1;
+    }else {
+        touchExtra = touchExtra - 0.1;
+    }
+    
+    if(touchExtra > 2048){
+        touchExtra = 2048;
+    }
+    
+    if(touchExtra < 0){
+        touchExtra = 0;
+    }
 
     animate();
     handleClient(server.available());   // Listen for incoming clients
-    if(totalSecondsSinceMidnight() >= lastMdnsUpdate + 1){
-       MDNS.update();
-       lastMdnsUpdate = totalSecondsSinceMidnight();
-    }
+    MDNS.update();
 }
 
 

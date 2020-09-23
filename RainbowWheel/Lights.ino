@@ -19,8 +19,11 @@ void animate(){
             break;
     }
     
+    // Touchextra: value between 0 and 2048, decay 0.1/25ms -> 0.4/100ms -> 4/s
+    setLedMountain(0, 50, 50, 50, touchExtra - 1);
+    
+    
     FastLED.show();
-    FastLED.delay(25);
 }
 
 void debugLights(){
@@ -245,7 +248,7 @@ inline double pos(double d){
     return d;
 }
 
-void clear(){
+inline void clear(){
     for(int i = 0; i < NUM_LEDS; i++){
         leds[i] = CRGB(0,0,0);
     }

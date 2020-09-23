@@ -61,7 +61,8 @@ void configure(String qp){
         parseQueryParamUInt("b", qp, &b);
         parseQueryParamUInt("w", qp, &w);
         parseQueryParamUInt("s", qp, &s);
-        
+        parseQueryParamInt("touchCalibration", qp, &touchCalibration);
+                
         unsigned int ldid = 0;
         if(parseQueryParamUInt("luftdatenid", qp, &ldid) && ldid != luftdatenid){
            // reset the measurements
@@ -111,6 +112,7 @@ void sendResponse(String path, WiFiClient client){
     }
     
     if(path.startsWith("debug")){
+        touchExtra = 0;
         client.println("<html><head><title>Rainbowwheel Debug page</title></head><body>");
         client.println("Rainbowwheel 0.1 - welcome<br/>Uptime is:");
         long timeSinceOnline = system_get_time() / 1000000;
@@ -118,17 +120,21 @@ void sendResponse(String path, WiFiClient client){
         client.println("seconds<br/>Millis since start of day:");
         client.println(totalMillisSinceMidnight());
         client.println("<br/>");
+
         
         client.print(currentHours());
         client.print(":");
         client.print(currentMinutes());
         client.print(":");
         client.println(currentSeconds());
+        client.println("<br/><br/>Touch calibration: ");
+        client.print(touchCalibration);
         
-        client.println("<br/>PM Values:<br/>PM2.5: ");            
+        client.println("<br/><br/>PM Values:<br/>PM2.5: ");            
         client.println(pm25);
         client.println("<br/>PM10: ");            
-        client.println(pm10);
+        client.println(pm10);       
+        
         client.println("</body></html>");
         return;
     }
