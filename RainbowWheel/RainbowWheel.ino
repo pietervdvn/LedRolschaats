@@ -5,6 +5,7 @@
 #include <math.h> 
 #include <ArduinoJson.h>
 
+
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
 #include <EEPROM.h>
@@ -31,6 +32,7 @@ CRGB leds[NUM_LEDS];
 #define SECTORS 3
 #define LUFTDATEN 4
 #define CHRISTMAS 5
+#define OFF 6
 #define ACCESS_POINT_MODE 1000
 
 unsigned int mode = 0;
@@ -79,7 +81,7 @@ WiFiServer server(80);
 
 String wifi_ssid = "";
 String wifi_password = "";
-String hostname = "rainbow-wheel";
+String hostname = "rainbow";
 
 // Current time
 unsigned long currentTime = millis();
@@ -159,9 +161,6 @@ void setup() {
     pinMode(STATUS_LED, OUTPUT);
     digitalWrite(STATUS_LED, HIGH);
     
-    delay(1000);
-    
-    
     /*
     * We save 3 strings of max 255 chars:
     * wifi_ssid
@@ -171,6 +170,7 @@ void setup() {
     * Furthermore, we save a telltale-string at location 0 namely "rainbow" in order to see if things are initialized already
     * At last, we save one extra int for the luftdaten-id
     */
+    /*
     EEPROM.begin(256*3 + 10 + 4);
     delay(150);
     String telltale = readStringFromEEPROM(1);
@@ -192,8 +192,9 @@ void setup() {
     setLed(NUM_LEDS/3, 100, 100, 0);
     setLed(2 * NUM_LEDS/3, 100, 100, 0);
     
-    FastLED.show();
+    commitLeds();
     setupWifi();
+    */
  
 }
 
@@ -326,7 +327,9 @@ void loop(){
     
     if(cyclesSinceLastTouch < 5){
         touchExtra += 1;
+        digitalWrite(STATUS_LED, HIGH);
     }else {
+        digitalWrite(STATUS_LED, LOW);
         touchExtra = touchExtra - 0.1;
     }
     
@@ -337,6 +340,11 @@ void loop(){
     if(touchExtra < 0){
         touchExtra = 0;
     }
+    
+    if(mode == ACCESS_POINT_MODE && totalSecondsSinceMidnight() % 120 == 0){
+        setupWifi();
+    }
+    
 
     animate();
     handleClient(server.available());   // Listen for incoming clients
@@ -367,7 +375,7 @@ inline long totalSecondsSinceMidnight(){
 
 void AdvertiseServices() {
    
-   if (MDNS.begin("rainbow"))
+   if (MDNS.begin(hostname))
    {
      // Add service to MDNS-SD
      MDNS.addService("http", "tcp", 80);

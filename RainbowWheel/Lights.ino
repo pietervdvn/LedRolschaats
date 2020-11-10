@@ -20,7 +20,15 @@ void animate(){
     }
     
     // Touchextra: value between 0 and 2048, decay 0.1/25ms -> 0.4/100ms -> 4/s
-    setLedMountain(0, 50, 50, 50, touchExtra - 1);
+    
+    setLedMountain(0, 50, 0, 0, touchExtra - 1);
+    setLedMountain(NUM_LEDS/2, 0, 30, 0 ,(touchExtra - NUM_LEDS * 0.75) - 1);
+    setLedMountain(0, 0, 0, 30, (touchExtra - NUM_LEDS * 1.5) - 1);
+    
+    setLedMountain(NUM_LEDS/2, 100, 0, 0, (touchExtra - NUM_LEDS * 2.25) - 1);
+    setLedMountain(0, 0, 100, 0, (touchExtra - NUM_LEDS * 3) - 1);
+    setLedMountain(NUM_LEDS/2, 0, 0, 100, (touchExtra - NUM_LEDS * 3.75) - 1);
+               
     
     
     FastLED.show();
@@ -52,7 +60,7 @@ void setSector(int sectorN, int r, int g, int b){
     stop -= 4;
     
     for(int i = start; i < stop; i++){
-        addLed(i, r, g, b);
+        setLed(i, r, g, b);
     }
     
 }
@@ -100,7 +108,7 @@ void showAndUpdateLuftdaten(){
         updateFineDustMeasurements();
         setLed(0,0,0,0);
         setLed(NUM_LEDS / 2,0,0,0);
-        FastLED.show();
+        commitLeds();
     }
 }
 
@@ -178,7 +186,7 @@ void setLedMountain(double center, int rbright, int gbright, int bbright, int tt
         double rDiff = 0.0  + (rbright * diff)/ttl;
         double gDiff = 0.0  + (gbright * diff)/ttl;
         double bDiff = 0.0  + (bbright * diff)/ttl;
-        addLed(i, rbright - rDiff, gbright - gDiff, bbright - bDiff);
+        setLed(i, rbright - rDiff, gbright - gDiff, bbright - bDiff);
     }
 }
 
@@ -255,13 +263,13 @@ inline void clear(){
 }
 
 void setLed(int i, double r, double g, double b){
-    i = modring(i);
 	leds[i] = CRGB(pos(r),pos(g), pos(b));
+    
 }
 
-void addLed(int i, double r, double g, double b){
-    i = modring(i);
-	leds[i] |= CRGB(pos(r),pos(g), pos(b));
+void commitLeds(){
+    FastLED.show();
 }
+
 
 

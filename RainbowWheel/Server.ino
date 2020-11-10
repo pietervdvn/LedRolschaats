@@ -111,6 +111,11 @@ void sendResponse(String path, WiFiClient client){
         return;
     }
     
+    if(path.startsWith("calibrate")){
+        calibrateTouch();
+        return;
+    }
+    
     if(path.startsWith("debug")){
         touchExtra = 0;
         client.println("<html><head><title>Rainbowwheel Debug page</title></head><body>");
@@ -133,7 +138,11 @@ void sendResponse(String path, WiFiClient client){
         client.println("<br/><br/>PM Values:<br/>PM2.5: ");            
         client.println(pm25);
         client.println("<br/>PM10: ");            
-        client.println(pm10);       
+        client.println(pm10);     
+        
+         client.println("<br/><br/>Hostname: ");    
+         client.println(hostname);        
+                  
         
         client.println("</body></html>");
         return;

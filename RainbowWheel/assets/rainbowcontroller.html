@@ -103,11 +103,23 @@
         <option value="2">Moving lights</option>
         <option value="3">Sectors</option>
         <option value="4">Air quality monitor with LuftDaten</option>
-        <option value="5">Christmas lights</option>
+        <option value="6">Touch only</option>
     </select>
 
     <h3>Luftdaten</h3>
-    <label for="luftdatenid">ID of the sensor to display</label><input type="number" id="luftdatenid" name="luftdatenid" min="0" value="7245">
+    <label for="luftdatenid">ID of the sensor to display</label><input type="number" id="luftdatenid" name="luftdatenid"
+                                                                       min="0" value="7245">
+
+    <script>
+        function calibrate() {
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", `./calibrate`);
+            xhr.send();
+        };
+    </script>
+    <br/>
+
+    <input type="button" value="Calibrate touch" onclick="calibrate()">
 
     <script>
 
