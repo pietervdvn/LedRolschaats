@@ -46,61 +46,21 @@ void setup() {
 
 void loop()
 {
-	int timeElapsed = 0;
+	int timeElapsed = 0; // in milliseconds
 	int frameDuration = 10; // In milliseconds
 	while(true){
 		clear();
        
-		animate(timeElapsed);	
-		
 		safety(60);
 		
+		setLed((timeElapsed / 1000) % 30, 0,128,0);
 		
 		FastLED.show();
 		FastLED.delay(10);
-		timeElapsed += 0.10;
+		timeElapsed += 10;
     }
 }
 
-
-int animate(uint frame, double millisPerFrame){
-	
-	// Move one pixel per second.
-	// AT time 0, we are at - 12
-	
-	time *= 1.3;
-	
-	double ledStart = time - ((int) (time / (NUM_LEDS + 8))) * (NUM_LEDS + 8);
-	
-	interpolateOutrunFromTo(ledStart - 15 , ledStart);
-	
-	return 60; // The number of seconds that an animation takes
-	
-}
-
-void interpolateOutrunFromTo(double start, double end){
-        for(int i = (int) (start - 1); i < end + 1; i++){
-            interpolateOutrun(i, start, end);
-        }
-
-}
-
-// Interpolates black -> red -> blue -> black
-void interpolateOutrun(int ledToApply, double interpolationLeft, double interpolationRight){
-   
-    double factor = 1.0 * (ledToApply - interpolationLeft) / (interpolationRight - interpolationLeft);
-    
-    // red peaks at 0.33
-    // blue peaks at 0.66
-    
-    double redFactor = soften((-fabs(1.1*(0.30 - factor)) + 0.33) * 3.0);
-    double blueFactor = soften((-fabs(1.3*(0.60 - factor)) + 0.33) * 3.0);
-    
-    
-    int red = redFactor * (double) BRIGHTNESS;
-	int blue = blueFactor *(double) BRIGHTNESS;
-    setLed(ledToApply, red, 0, blue);
-}
 
 inline double soften(double v){
 	if(v < 0){

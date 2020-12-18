@@ -5,16 +5,16 @@
 #include <math.h> 
 #include <ArduinoJson.h>
 
-
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
 #include <EEPROM.h>
+#include "FastLED_RGBW.h"
 
 #define LED_PIN     D1
 #define NUM_LEDS    105
 #define BRIGHTNESS  255
-#define LED_TYPE    WS2813
-#define COLOR_ORDER GRB
+#define LED_TYPE    WS2812B
+#define COLOR_ORDER RGB
 
 // Should be high to let the led shine
 #define STATUS_LED D7
@@ -24,7 +24,9 @@
 
 
 
-CRGB leds[NUM_LEDS];
+// FastLED with RGBW
+CRGBW leds[NUM_LEDS];
+CRGB *ledsRGB = (CRGB *) &leds[0];
 
 #define RGB_ROTATION 0
 #define CLOCK 1
@@ -155,7 +157,7 @@ void setup() {
     pinMode(CAPACITIVE_SEND_PIN, OUTPUT);
   
   
-    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
+   FastLED.addLeds<WS2812B, LED_PIN, RGB>(ledsRGB, getRGBWsize(NUM_LEDS));
     FastLED.setBrightness(  BRIGHTNESS );
   
     pinMode(STATUS_LED, OUTPUT);
@@ -170,7 +172,6 @@ void setup() {
     * Furthermore, we save a telltale-string at location 0 namely "rainbow" in order to see if things are initialized already
     * At last, we save one extra int for the luftdaten-id
     */
-    /*
     EEPROM.begin(256*3 + 10 + 4);
     delay(150);
     String telltale = readStringFromEEPROM(1);
@@ -194,11 +195,15 @@ void setup() {
     
     commitLeds();
     setupWifi();
-    */
  
 }
 
+bool accessPointStarted = false;
 void setupAccessPoint(){
+    if(accessPointStarted){
+        return;
+    }
+    accessPointStarted = true;
     if(hostname.length() == 0){
         hostname= "rainbow-pietervdvn";
     }

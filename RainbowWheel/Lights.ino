@@ -24,7 +24,6 @@ void animate(){
     setLedMountain(0, 50, 0, 0, touchExtra - 1);
     setLedMountain(NUM_LEDS/2, 0, 30, 0 ,(touchExtra - NUM_LEDS * 0.75) - 1);
     setLedMountain(0, 0, 0, 30, (touchExtra - NUM_LEDS * 1.5) - 1);
-    
     setLedMountain(NUM_LEDS/2, 100, 0, 0, (touchExtra - NUM_LEDS * 2.25) - 1);
     setLedMountain(0, 0, 100, 0, (touchExtra - NUM_LEDS * 3) - 1);
     setLedMountain(NUM_LEDS/2, 0, 0, 100, (touchExtra - NUM_LEDS * 3.75) - 1);
@@ -92,10 +91,10 @@ void animateRGBBow(){
      double millisSinceStart = totalMillisSinceMidnight();
      double redCenter = loopLocation(millisSinceStart, s * 1000);
      setLedMountain(redCenter, r,0,0, w);
-     double greenCenter = loopLocation(millisSinceStart, s * 1000) + NUM_LEDS / 3;
-     setLedMountain(greenCenter, 0,g,0, w);
      double blueCenter = loopLocation(millisSinceStart, s * 1000) + 2 * NUM_LEDS / 3;
      setLedMountain(blueCenter, 0,0,b, w);
+     double greenCenter = loopLocation(millisSinceStart, s * 1000) + NUM_LEDS / 3;
+     setLedMountain(greenCenter, 0,g,0, w);
 }
 
 void showAndUpdateLuftdaten(){
@@ -186,7 +185,7 @@ void setLedMountain(double center, int rbright, int gbright, int bbright, int tt
         double rDiff = 0.0  + (rbright * diff)/ttl;
         double gDiff = 0.0  + (gbright * diff)/ttl;
         double bDiff = 0.0  + (bbright * diff)/ttl;
-        setLed(i, rbright - rDiff, gbright - gDiff, bbright - bDiff);
+        addLed(i, rbright - rDiff, gbright - gDiff, bbright - bDiff);
     }
 }
 
@@ -265,6 +264,10 @@ inline void clear(){
 void setLed(int i, double r, double g, double b){
 	leds[i] = CRGB(pos(r),pos(g), pos(b));
     
+}
+
+void addLed(int i, double r, double g, double b){
+	leds[i] = CRGB(leds[i].red + pos(r), leds[i].green + pos(g), leds[i].blue + pos(b));
 }
 
 void commitLeds(){
