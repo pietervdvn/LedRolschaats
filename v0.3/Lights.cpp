@@ -28,21 +28,33 @@ void SetLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int 
 	if(i < 0 || i >= NUM_LEDS){
 		return;
 	}
-	leds[i] = CRGBW(r, g, b, w);
+	if(HAS_WHITE){
+		leds[i] = CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] = CRGB(g, r, b);
+	}
 }
 
 void AddLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int w){
 	if(i < 0 || i >= NUM_LEDS){
 		return;
 	}
-	leds[i] += CRGBW(r, g, b, w);
+	if(HAS_WHITE){
+		leds[i] += CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] -= CRGB(g, r, b);
+	}
 }
 
 void DimLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int w){
 	if(i < 0 || i >= NUM_LEDS){
 		return;
 	}
-	leds[i] -= CRGBW(r, g, b, w);
+	if(HAS_WHITE){
+		leds[i] -= CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] -= CRGB(g, r, b);
+	}
 }
 
 void Commit(){
