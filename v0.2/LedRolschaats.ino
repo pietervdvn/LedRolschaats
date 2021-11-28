@@ -35,9 +35,11 @@ void setup() {
 	Serial.begin(115200);
 	Serial.print("Booting...\n");
 	Serial.print(LED_PIN);
-    delay( 1000 ); // power-up safety delay
+    delay( 250 ); // power-up safety delay
     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS).setCorrection( TypicalLEDStrip );
     FastLED.setBrightness(  BRIGHTNESS );
+  
+    
   
 }
 

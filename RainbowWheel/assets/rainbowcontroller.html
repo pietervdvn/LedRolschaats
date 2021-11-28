@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/svg" href="./logo.svge"/>
-    <link rel="manifest" href="./manifest.webmanifest">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <link href="./logo.svge" rel="icon" type="image/svg"/>
+    <link href="./manifest.webmanifest" rel="manifest">
     <title>Rainbow Wheel Controller</title>
     <style>        .slidecontainer {
         width: 100%;
@@ -23,7 +23,7 @@
         width: 100%;
         box-sizing: border-box;
     }
-    
+
     .slider {
         -webkit-appearance: none;
         appearance: none;
@@ -87,17 +87,17 @@
 <div class="slidecontainer">
     <div id="sliders">
         <h3>Colour intensity</h3>
-        <input type="range" min="0" max="200" value="50" class="slider" id="red">
-        <input type="range" min="0" max="200" value="50" class="slider" id="green">
-        <input type="range" min="0" max="200" value="50" class="slider" id="blue">
+        <input class="slider" id="red" max="200" min="0" type="range" value="50">
+        <input class="slider" id="green" max="200" min="0" type="range" value="50">
+        <input class="slider" id="blue" max="200" min="0" type="range" value="50">
         <h3>Speed</h3>
-        <input type="range" min="1" max="60" value="40" class="slider" id="speed">
+        <input class="slider" id="speed" max="60" min="1" type="range" value="40">
         <h3>Width</h3>
-        <input type="range" min="1" max="104" value="10" class="slider" id="width">
+        <input class="slider" id="width" max="104" min="1" type="range" value="10">
     </div>
     <br/>
     <label for="modepicker">Mode</label>
-    <select name="modepicker" id="modepicker">
+    <select id="modepicker" name="modepicker">
         <option value="0">Rotating rainbow/fixed colour</option>
         <option value="1">Clock</option>
         <option value="2">Moving lights</option>
@@ -107,19 +107,19 @@
     </select>
 
     <h3>Luftdaten</h3>
-    <label for="luftdatenid">ID of the sensor to display</label><input type="number" id="luftdatenid" name="luftdatenid"
-                                                                       min="0" value="7245">
+    <label for="luftdatenid">ID of the sensor to display</label><input id="luftdatenid" min="0" name="luftdatenid"
+                                                                       type="number" value="7245">
 
     <script>
         function calibrate() {
             var xhr = new XMLHttpRequest();
             xhr.open("GET", `./calibrate`);
             xhr.send();
-        };
+        }
     </script>
     <br/>
 
-    <input type="button" value="Calibrate touch" onclick="calibrate()">
+    <input onclick="calibrate()" type="button" value="Calibrate touch">
 
     <script>
 
@@ -149,17 +149,18 @@
             var xhr = new XMLHttpRequest();
             xhr.open("GET", `./configure?${query}`);
             xhr.send();
-        };
+        }
 
         function chronic() {
             configure();
             window.setTimeout(chronic, 400);
-        };
+        }
+
         chronic();
 
         function update() {
             updatePending = true;
-        };
+        }
 
         modeElement.oninput = update;
         red.oninput = update;

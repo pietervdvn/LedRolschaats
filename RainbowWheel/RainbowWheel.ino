@@ -3,7 +3,7 @@
 // #include <ESP8266HTTPClient.h>
 #include <WiFiClientSecure.h>
 #include <math.h> 
-#include <ArduinoJson.h>
+// #include <ArduinoJson.h>
 
 #define FASTLED_ESP8266_RAW_PIN_ORDER
 #include <FastLED.h>
