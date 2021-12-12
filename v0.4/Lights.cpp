@@ -1,0 +1,66 @@
+#include <Arduino.h>
+#include <math.h> 
+#define FASTLED_ESP8266_RAW_PIN_ORDER
+#include <FastLED.h>
+#include "FastLED_RGBW.h"
+#include "Properties.h"
+
+
+
+
+#define COLOR_ORDER RGB
+
+
+// WS2812B: RGBW-ledstrip
+#define LED_TYPE    WS2812B
+
+// FastLED with RGBW
+CRGBW leds[NUM_LEDS];
+CRGB *ledsRGB = (CRGB *) &leds[0];
+
+void SetupLights(){
+     FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(ledsRGB, getRGBWsize(NUM_LEDS));
+     FastLED.setBrightness(  BRIGHTNESS );
+     Serial.print("Lights initialized: counts ");
+  	 Serial.print(NUM_LEDS);
+     Serial.print(" Leds\n");
+        	
+}
+
+void SetLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int w){
+	if(i < 0 || i >= NUM_LEDS){
+		return;
+	}
+	if(HAS_WHITE){
+		leds[i] = CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] = CRGB(g, r, b);
+	}
+}
+
+void AddLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int w){
+	if(i < 0 || i >= NUM_LEDS){
+		return;
+	}
+	if(HAS_WHITE){
+		leds[i] += CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] += CRGB(g, r, b);
+	}
+}
+
+void DimLed(int i, unsigned int r, unsigned int g, unsigned int b, unsigned int w){
+	if(i < 0 || i >= NUM_LEDS){
+		return;
+	}
+	if(HAS_WHITE){
+		leds[i] -= CRGBW(r, g, b, w);
+	}else{
+		ledsRGB[i] -= CRGB(g, r, b);
+	}
+}
+
+void Commit(){
+    FastLED.show();
+}
+
