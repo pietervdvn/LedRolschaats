@@ -11,6 +11,45 @@ void setup() {
 }
 
 void loop(){
+    christmas_tree();
+}
+
+
+void christmas_tree(){
+    double time = 0.0;
+    BootAnimation bootAnimation;
+    bootAnimation.Configure(7.5);
+    
+    TwinkleLight twinkle[50];
+    for(int i = 0; i < 50; i ++){
+        int r = 64 * (i % 2 == 0);
+        int g = 64 * (i % 3 == 0);
+        int b = 64 * (i % 4 == 0);
+        int w = 64 * (i % 5 == 0);
+        
+        twinkle[i].Configure(i, r, g, b, w, 0.5, 0.5,0.5,randto(0.5));
+    }
+       
+    double resetTime = 120;
+    
+    while(true){
+        // Clear
+        SetRange(0, NUM_LEDS, 0,0,0,0);
+          
+        for(int i = 0; i < 50; i ++){
+            twinkle[i].Animate(time);
+        }
+        
+        Commit();
+        int awaitMs = 20;
+        delay(awaitMs);
+        time += 0.001 * awaitMs;
+        
+        if(time >= resetTime){
+          time = time - resetTime;
+          bootAnimation.Disable();
+        }
+    }
 
 }
 

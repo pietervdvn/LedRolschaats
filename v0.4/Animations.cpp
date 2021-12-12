@@ -11,6 +11,55 @@ class Animation {
         virtual double LoopTimeSeconds();
 };
 
+class TwinkleLight: public Animation {
+    private:
+        int i, r, g, b, w;
+        double off, on, fade, shift;
+    public:
+        void Animate(double secondsSinceStart) {
+            secondsSinceStart = secondsSinceStart + this->shift;
+            double loopTime = this->LoopTimeSeconds();
+            while(secondsSinceStart > loopTime){
+                secondsSinceStart = secondsSinceStart - loopTime;
+            }
+            
+            if(secondsSinceStart < this->off){
+                // The led is OFF - don't do anything
+                
+            }else if(secondsSinceStart < this->off + this->fade){
+                // Fade in
+                double percentage = 0.0 + (secondsSinceStart - this->off) / this->fade;
+                AddLed(this->i, percentage * this->r, percentage * this->g, percentage * this->b, percentage * this->w);
+            }else if(secondsSinceStart < this-> off + this->fade + this->on){
+                // Simply on
+                AddLed(this->i, this->r, this->g, this->b, this->w);
+            }else {
+                // fade out
+                double percentage = 0.0 + (secondsSinceStart - this->off - this->fade - this->on) / this->fade;
+                percentage = 1 - percentage;
+                AddLed(this->i, percentage * this->r, percentage * this->g, percentage * this->b, percentage * this->w);
+            }
+                    
+        }
+        
+        void Configure(int ledIndex, int r, int g, int b, int w, double on, double off, double fade, double shift){
+            this->i = ledIndex;
+            this->r = r;
+            this->g = g;
+            this->b = b;
+            this->w = w;
+               
+            this->on = on;
+            this->off = off;
+            this->fade = fade;
+            this->shift = shift;
+        }
+
+        double LoopTimeSeconds(){
+            return this->off + this->on + this->fade*2;      
+        }
+};
+
 // A single led travelling all leds, ideal to test the leds
 class TravelingLight: public Animation {
     public:
