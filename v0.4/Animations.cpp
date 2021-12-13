@@ -37,13 +37,16 @@ class TwinkleLight: public Animation {
                 // fade out
                 double percentage = 0.0 + (secondsSinceStart - this->off - this->fade - this->on) / this->fade;
                 percentage = 1 - percentage;
+                if(percentage < 0){
+                    percentage = 0;
+                }
                 AddLed(this->i, percentage * this->r, percentage * this->g, percentage * this->b, percentage * this->w);
             }
                     
         }
         
         void Configure(int ledIndex, int r, int g, int b, int w, double on, double off, double fade, double shift){
-            this->i = ledIndex;
+            this->i = modRing(ledIndex);
             this->r = r;
             this->g = g;
             this->b = b;
@@ -96,21 +99,33 @@ class SlowRange: public Animation {
         }
     
         void Animate(double secondsSinceStart) {
+            while(secondsSinceStart > this->cycleTime){
+                secondsSinceStart -= this->cycleTime;
+            }
             secondsSinceStart += phaseShift;
-            double start = NUM_LEDS * (secondsSinceStart / this->cycleTime);
+            double start = 1.0 * NUM_LEDS * (secondsSinceStart / this->cycleTime);
             for(int i = floor(start); i < floor(start) + width + 1; i ++){
-                double intensity = start + (width / 2.0);
-                    intensity -= i;
+                double intensity = 0.0 + (double) start + (width / 2.0);
+                intensity -= i;
                 if(intensity < 0){
                     intensity = -intensity;
                 }
-                intensity /= width / 2.0;
+                intensity = (2.0 * intensity) / width;
                 intensity = 1.0 - intensity;
                 if(intensity < 0){
                     intensity = 0;
                 }
-                
-                AddLed(modRing(i), this->r * intensity, this->g * intensity, this->b * intensity, this->w * intensity);
+                if(intensity > 10){
+                    intensity = 10;
+                }
+                i = modRing(i);
+                if(i < 0){
+                    i = 0;
+                }
+                if(i > NUM_LEDS){
+                    i = 0;
+                }
+                AddLed(i, this->r * intensity, this->g * intensity, this->b * intensity, this->w * intensity);
             }
             
         
